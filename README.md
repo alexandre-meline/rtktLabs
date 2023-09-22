@@ -4,8 +4,10 @@ Le script BASH et le Dockerfile sont utilisés pour créer un environnement mini
 
 
 ## Utilisation
+```
 chmod +x ./build
 sudo ./build
+```
 
 ## Script BASH
 
