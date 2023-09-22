@@ -5,6 +5,15 @@ Le script BASH et le Dockerfile sont utilisés pour créer un environnement mini
 
 Les étapes suivantes expliquent en détail comment le système est construit.
 
+## Utilisation
+Une fois que le script BASH a été exécuté avec succès pour créer l'initramfs et configurer le disque image, vous pouvez lancer Qemu avec le disque image pour tester votre environnement minimaliste. Assurez-vous de suivre les étapes du sujet du cours pour configurer Qemu et le système NFS si nécessaire.
+
+N'oubliez pas de personnaliser le script et le Dockerfile en fonction de vos besoins spécifiques et de votre configuration.
+```
+chmod +x ./build
+sudo ./build
+```
+
 ## Script BASH
 
 Le script BASH est utilisé pour préparer l'initramfs et la configuration du disque image. Voici un aperçu des principales étapes effectuées par le script :
@@ -21,16 +30,7 @@ Le script BASH est utilisé pour préparer l'initramfs et la configuration du di
 10. Copie des bibliothèques nécessaires dans l'initramfs.
 11. Création du script `init` pour l'initramfs.
 12. Création d'une image CPIO gzippée de l'initramfs.
-
-## Utilisation
-Une fois que le script BASH a été exécuté avec succès pour créer l'initramfs et configurer le disque image, vous pouvez lancer Qemu avec le disque image pour tester votre environnement minimaliste. Assurez-vous de suivre les étapes du sujet du cours pour configurer Qemu et le système NFS si nécessaire.
-
-N'oubliez pas de personnaliser le script et le Dockerfile en fonction de vos besoins spécifiques et de votre configuration.
-```
-chmod +x ./build
-sudo ./build
-```
-
+13. 
 ## Dockerfile
 
 Le Dockerfile est utilisé pour configurer un système minimaliste Alpine Linux qui sera inclus dans l'initramfs. Voici un aperçu des principales étapes effectuées par le Dockerfile :
