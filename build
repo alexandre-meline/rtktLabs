@@ -38,32 +38,21 @@ if [ -n "$(sudo losetup -l | grep disk.img)" ]; then
     sudo losetup -d $(sudo losetup -l | grep disk.img | cut -d' ' -f1)
 fi
 
-# Assurez-vous que vous êtes dans le bon répertoire
 BUILDS=$PWD
 INITRAMFS_BUILD=$PWD/initramfs
 BUSYBOX_BUILD=$PWD/busybox
 
-# Cloner le référentiel Busybox
 git clone git://git.busybox.net/busybox $BUSYBOX_BUILD
 cd $BUSYBOX_BUILD
-
-# Configurer Busybox
 make defconfig
-
-# Construire Busybox
 make
-
-# Installer Busybox
 make install
 
 # Créer le répertoire pour le programme my_init_loop
 cd $BUILDS
-# Création du répertoire my_init_loop
 mkdir -p $BUILDS/my_init_loop
-# Création du fichier main.c
 touch $BUILDS/my_init_loop/main.c
 
-# Création du programme my_init_loop/main.c
 cat > $BUILDS/my_init_loop/main.c <<EOF
 #include <stdio.h>
 #include <sys/types.h>
@@ -94,29 +83,21 @@ cd $INITRAMFS_BUILD
 
 # Créer la structure de répertoires initramfs
 mkdir -p bin sbin etc proc sys dev usr/bin usr/sbin
-
-# Copier les fichiers de Busybox dans l'initramfs
 cp -a $BUSYBOX_BUILD/_install/* $INITRAMFS_BUILD/
-
 # Compilation du programme my_init_loop
 gcc $BUILDS/my_init_loop/main.c -o $INITRAMFS_BUILD/init_loop
-
-# Rendre le programme my_init_loop exécutable
 chmod +x $INITRAMFS_BUILD/my_init_loop
 
 echo "Script main.c terminé  !"
 
-# Créer la structure des bibliothèques
 mkdir -p $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
 mkdir -p $INITRAMFS_BUILD/lib64
 
-# Copier les bibliothèques nécessaires
 cp /lib/x86_64-linux-gnu/libc.so.6 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
 cp /lib/x86_64-linux-gnu/libm.so.6 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
 cp /lib/x86_64-linux-gnu/libresolv.so.2 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
 cp /lib64/ld-linux-x86-64.so.2 $INITRAMFS_BUILD/lib64
 
-# Créer le script init
 cat > $INITRAMFS_BUILD/init <<END
 #!/bin/sh
 mount -t proc none /proc
@@ -135,16 +116,12 @@ Welcome to "Ecole 2600 linux"
 ./init_loop
 END
 
-# Rendre le script init exécutable
 chmod +x $INITRAMFS_BUILD/init
-
-# Créer une image CPIO gzippée de l'initramfs
 cd $BUILDS/initramfs
 find . -print0 | cpio --null -ov --format=newc | gzip -9 > $BUILDS/initramfs.cpio.gz
 
 echo "Initramfs créé avec succès dans $BUILDS/initramfs.cpio.gz"
 
-# Se deplace dans le build (root)
 cd $BUILDS
 
 LINUX_KERNEL_PATH=$BUILDS/linux-5.15.132
@@ -156,32 +133,19 @@ if [ ! -f "/usr/include/libelf.h" ]; then
     sudo apt install libelf-dev
 fi
 
-# Telecharge le kernel
 wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.132.tar.xz
-
-# Decompresser le kernel
 tar -xvf linux-5.15.132.tar.xz
-
-# Supprime fichier compressé du kernel
 rm linux-5.15.132.tar.xz
-
-# Se deplace dans le kernel
 cd linux-5.15.132
-
-# Configure le kernel (par defaut)
 make defconfig
-
-# Construire le kernel
 make
 
-# Construire le kernel avec les options de debug
 cd $BUILDS
 
 # Définir la taille du disque image (450MB)
 DISK_IMAGE_SIZE="450M"
 DISK_IMAGE="./disk.img"
 
-# Créer le disque image vide
 truncate -s $DISK_IMAGE_SIZE $DISK_IMAGE
 
 # Créer une table de partition en mode BIOS (msdos)
