@@ -1,7 +1,8 @@
 # rootkitLabs
 
 Le script BASH et le Dockerfile sont utilisés pour créer un environnement minimaliste avec Busybox et un initramfs personnalisé pour les besoins du cours de l'[École 2600](https://ecole2600.com/)
-: "Linux Kernel Programming I - Workshop". Les étapes suivantes expliquent en détail comment le système est construit.
+: "Linux Kernel Programming I - Workshop". 
+Les étapes suivantes expliquent en détail comment le système est construit.
 
 ## Script BASH
 
