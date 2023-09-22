@@ -20,6 +20,9 @@ Le script BASH est utilisé pour préparer l'initramfs et la configuration du di
 12. Création d'une image CPIO gzippée de l'initramfs.
 
 ## Utilisation
+Une fois que le script BASH a été exécuté avec succès pour créer l'initramfs et configurer le disque image, vous pouvez lancer Qemu avec le disque image pour tester votre environnement minimaliste. Assurez-vous de suivre les étapes du sujet du cours pour configurer Qemu et le système NFS si nécessaire.
+
+N'oubliez pas de personnaliser le script et le Dockerfile en fonction de vos besoins spécifiques et de votre configuration.
 ```
 chmod +x ./build
 sudo ./build
@@ -35,9 +38,3 @@ Le Dockerfile est utilisé pour configurer un système minimaliste Alpine Linux 
 4. Définition d'un mot de passe pour l'utilisateur root.
 5. Configuration des systèmes de fichiers pseudo.
 6. Copie des fichiers de configuration de Docker dans le répertoire monté du disque image.
-
-## Utilisation
-
-Une fois que le script BASH a été exécuté avec succès pour créer l'initramfs et configurer le disque image, vous pouvez lancer Qemu avec le disque image pour tester votre environnement minimaliste. Assurez-vous de suivre les étapes du sujet du cours pour configurer Qemu et le système NFS si nécessaire.
-
-N'oubliez pas de personnaliser le script et le Dockerfile en fonction de vos besoins spécifiques et de votre configuration.
