@@ -30,7 +30,7 @@ Le script BASH est utilisé pour préparer l'initramfs et la configuration du di
 10. Copie des bibliothèques nécessaires dans l'initramfs.
 11. Création du script `init` pour l'initramfs.
 12. Création d'une image CPIO gzippée de l'initramfs.
-13. 
+    
 ## Dockerfile
 
 Le Dockerfile est utilisé pour configurer un système minimaliste Alpine Linux qui sera inclus dans l'initramfs. Voici un aperçu des principales étapes effectuées par le Dockerfile :
