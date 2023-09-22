@@ -1,0 +1,275 @@
+#!/bin/bash
+
+# Vérification si le script est exécuté en tant que root
+if [ "$(id -u)" != "0" ]; then
+    echo "Ce script doit être exécuté en tant que root."
+    exit 1
+fi
+
+# Vérifie si les fichiers sont présents et supprime les dossiers/fichiers existants
+if [ -d "initramfs" ]; then
+    echo "Suppression du répertoire initramfs existant"
+    rm -rf initramfs
+fi
+if [ -d "busybox" ]; then
+    echo "Suppression du répertoire busybox existant"
+    rm -rf busybox
+fi
+if [ -d "my_init_loop" ]; then
+    echo "Suppression du répertoire my_init_loop existant"
+    rm -rf my_init_loop
+fi
+if [ -f "initramfs.cpio.gz" ]; then
+    echo "Suppression du fichier initramfs.cpio.gz existant"
+    rm -rf initramfs.cpio.gz
+fi
+if [ -f "disk.img" ]; then
+    echo "Suppression du fichier disk.img existant"
+    rm -rf disk.img
+fi
+if [ -d "linux-5.15.132" ]; then
+    echo "Suppression du répertoire linux-5.15.132 existant"
+    rm -rf linux-5.15.132
+fi
+
+# Verifie si le disk est monté sur losetup -l si oui supprime le/les disk(s) monté(s)
+if [ -n "$(sudo losetup -l | grep disk.img)" ]; then
+    echo "Suppression du périphérique loopback existant"
+    sudo losetup -d $(sudo losetup -l | grep disk.img | cut -d' ' -f1)
+fi
+
+# Assurez-vous que vous êtes dans le bon répertoire
+BUILDS=$PWD
+INITRAMFS_BUILD=$PWD/initramfs
+BUSYBOX_BUILD=$PWD/busybox
+
+# Cloner le référentiel Busybox
+git clone git://git.busybox.net/busybox $BUSYBOX_BUILD
+cd $BUSYBOX_BUILD
+
+# Configurer Busybox
+make defconfig
+
+# Construire Busybox
+make
+
+# Installer Busybox
+make install
+
+# Créer le répertoire pour le programme my_init_loop
+cd $BUILDS
+# Création du répertoire my_init_loop
+mkdir -p $BUILDS/my_init_loop
+# Création du fichier main.c
+touch $BUILDS/my_init_loop/main.c
+
+# Création du programme my_init_loop/main.c
+cat > $BUILDS/my_init_loop/main.c <<EOF
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    printf("ECOLE 2600 MY INIT\n");
+    while (1) {
+        pid_t pid = fork();
+        int status = 0;
+        if (pid) {
+            waitpid(pid, &status, 0);
+            printf("Respawn\n");
+            pid = 0;
+        } else {
+            char *tab[] = {"/bin/sh", NULL};
+            execv("/bin/sh", tab);
+        }
+    }
+}
+EOF
+
+# Créer le répertoire pour l'initramfs
+mkdir -p $INITRAMFS_BUILD
+cd $INITRAMFS_BUILD
+
+# Créer la structure de répertoires initramfs
+mkdir -p bin sbin etc proc sys dev usr/bin usr/sbin
+
+# Copier les fichiers de Busybox dans l'initramfs
+cp -a $BUSYBOX_BUILD/_install/* $INITRAMFS_BUILD/
+
+# Compilation du programme my_init_loop
+gcc $BUILDS/my_init_loop/main.c -o $INITRAMFS_BUILD/init_loop
+
+# Rendre le programme my_init_loop exécutable
+chmod +x $INITRAMFS_BUILD/my_init_loop
+
+echo "Script main.c terminé  !"
+
+# Créer la structure des bibliothèques
+mkdir -p $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
+mkdir -p $INITRAMFS_BUILD/lib64
+
+# Copier les bibliothèques nécessaires
+cp /lib/x86_64-linux-gnu/libc.so.6 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
+cp /lib/x86_64-linux-gnu/libm.so.6 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
+cp /lib/x86_64-linux-gnu/libresolv.so.2 $INITRAMFS_BUILD/lib/x86_64-linux-gnu/
+cp /lib64/ld-linux-x86-64.so.2 $INITRAMFS_BUILD/lib64
+
+# Créer le script init
+cat > $INITRAMFS_BUILD/init <<END
+#!/bin/sh
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+cat <<!
+Boot took \$(cut -d' ' -f1 /proc/uptime) seconds
+___________ .__ ________ _______________ _______
+\_ _____/ ____ ____ | | ____ \_____ \/ _____/\ _ \ \ _ \
+| __)__/ ___\/ _ \| | _/ __ \ / ____/ __ \ / /_\ \/ /_\ \
+| \ \__( <_> ) |_\ ___/ / \ |__\ \\ \_/ \ \_/ \
+/_______ /\___ >____/|____/\___ > \_______ \_____ / \_____ /\_____ /
+\/ \/ \/ \/ \/ \/ \/
+Welcome to "Ecole 2600 linux"
+!
+./init_loop
+END
+
+# Rendre le script init exécutable
+chmod +x $INITRAMFS_BUILD/init
+
+# Créer une image CPIO gzippée de l'initramfs
+cd $BUILDS/initramfs
+find . -print0 | cpio --null -ov --format=newc | gzip -9 > $BUILDS/initramfs.cpio.gz
+
+echo "Initramfs créé avec succès dans $BUILDS/initramfs.cpio.gz"
+
+# Se deplace dans le build (root)
+cd $BUILDS
+
+LINUX_KERNEL_PATH=$BUILDS/linux-5.15.132
+
+# Vérifie si la librairie libelf-dev est installée
+if [ ! -f "/usr/include/libelf.h" ]; then
+    echo "La librairie libelf-dev n'est pas installée."
+    echo "Installation de la librairie libelf-dev"
+    sudo apt install libelf-dev
+fi
+
+# Telecharge le kernel
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.132.tar.xz
+
+# Decompresser le kernel
+tar -xvf linux-5.15.132.tar.xz
+
+# Supprime fichier compressé du kernel
+rm linux-5.15.132.tar.xz
+
+# Se deplace dans le kernel
+cd linux-5.15.132
+
+# Configure le kernel (par defaut)
+make defconfig
+
+# Construire le kernel
+make
+
+# Construire le kernel avec les options de debug
+cd $BUILDS
+
+# Définir la taille du disque image (450MB)
+DISK_IMAGE_SIZE="450M"
+DISK_IMAGE="./disk.img"
+
+# Créer le disque image vide
+truncate -s $DISK_IMAGE_SIZE $DISK_IMAGE
+
+# Créer une table de partition en mode BIOS (msdos)
+/sbin/parted -s $DISK_IMAGE mktable msdos
+
+# Ajouter une partition primaire de type ext4 qui occupe tout l'espace disque
+/sbin/parted -s $DISK_IMAGE mkpart primary ext4 1 "100%"
+
+# Marquer la partition comme bootable
+/sbin/parted -s $DISK_IMAGE set 1 boot on
+
+# Créer un périphérique loopback pour le disque image
+LOOP_DEVICE=$(sudo losetup -Pf $DISK_IMAGE)
+
+# Rechercher l'ID du fichier disk.img avec losetup
+loop_info=$(sudo losetup -l | grep "$DISK_IMAGE")
+
+# Définir la regex pour correspondre à /dev/loopXX
+regex='[0-9]{2}'
+
+# Utiliser la regex pour extraire l'ID
+if [[ $loop_info =~ $regex ]]; then
+    loop_id="${BASH_REMATCH[0]}"
+    echo "L'ID du fichier $disk_file est : $loop_id"
+else
+    echo "Aucun périphérique loopback n'est associé au fichier $disk_file."
+fi
+
+echo "Disque image créé avec succès : $DISK_IMAGE"
+echo "Périphérique loopback associé : $loop_id"
+
+# Revient dans le build (root)
+cd $BUILDS
+
+# Monte la partition du disque image avec l'id du fichier disk.img
+sudo mkfs.ext4 /dev/loop${loop_id}p1
+
+mkdir -p /tmp/my-rootfs
+
+# Monte la partition du disque image avec l'id du fichier disk.img vers
+# le répertoire /tmp/my-rootfs
+sudo mount /dev/loop${loop_id}p1 /tmp/my-rootfs
+
+# DOCKERFILE
+dockerfile_directory=$PWD/Dockerfile
+
+echo "Chemin du Dockerfile : $dockerfile_directory"
+
+# Build image docker
+docker build -t my-rootfs -f "$dockerfile_directory" /tmp/my-rootfs
+
+docker run -it --rm -v /tmp/my-rootfs:/my-rootfs alpine sh
+
+# Lance le fichier 'run_docker'
+chmod +x ./run_docker
+./run_docker
+
+# We can edit the welcome message of Alpine.
+# sudo vim /tmp/my-rootfs/etc/issue
+sudo /tmp/my-rootfs/etc/issue << EOF
+echo "Welcome to Ecole 2600 Linux"
+EOF
+
+# Copie le fichier initramfs.cpio.gz dans le répertoire /boot
+sudo mkdir -p /tmp/my-rootfs/boot/grub
+
+# Create the grub.cfg file for kernel booting
+sudo cp ${LINUX_KERNEL_PATH}/arch/x86/boot/bzImage /tmp/my-rootfs/boot/vmlinuz
+
+# Edite le fichier de configuration grub.cfg
+# sudo vim /tmp/my-rootfs/boot/grub/grub.cfg
+sudo /tmp/my-rootfs/boot/grub/grub.cfg << EOF
+serial
+terminal_output serial
+set root=(hd0,1)
+menuentry "Linux2600" { linux /boot/vmlinuz root=/dev/sda1 console=ttyS0
+}
+EOF
+
+# We install Grub via the loopback device in our disk image for BIOS booting.
+sudo grub-install --directory=/usr/lib/grub/i386-pc \
+--boot-directory=/tmp/my-rootfs/boot /dev/loop${loop_id}
+
+# We can unmount the partition.
+sudo umount /tmp/my-rootfs
+
+# We can detach the loopback device from the disk image.
+sudo losetup -d /dev/loop${loop_id}
+
+# We can run Qemu on our disk image.
+qemu-system-x86_64 -hda $DISK_IMAGE -nographic
