@@ -2,6 +2,11 @@
 
 Le script BASH et le Dockerfile sont utilisés pour créer un environnement minimaliste avec Busybox et un initramfs personnalisé pour les besoins du cours De l'école2600: "Linux Kernel Programming I - Workshop". Les étapes suivantes expliquent en détail comment le système est construit.
 
+
+## Utilisation
+chmod +x ./build
+sudo ./build
+
 ## Script BASH
 
 Le script BASH est utilisé pour préparer l'initramfs et la configuration du disque image. Voici un aperçu des principales étapes effectuées par le script :
