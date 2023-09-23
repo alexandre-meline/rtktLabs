@@ -41,3 +41,10 @@ Le Dockerfile est utilisé pour configurer un système minimaliste Alpine Linux 
 4. Définition d'un mot de passe pour l'utilisateur root.
 5. Configuration des systèmes de fichiers pseudo.
 6. Copie des fichiers de configuration de Docker dans le répertoire monté du disque image.
+
+## À faire
+
+- Ajouter la possibilité de créer différentes images, telles qu'Ubuntu, Debian, etc.
+- Mettre en place un système de génération d'ID aléatoires avec persistance pour supprimer correctement les disques lorsque plusieurs instances QEMU sont créées.
+- Autres améliorations et fonctionnalités à venir...
+
