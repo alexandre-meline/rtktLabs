@@ -14,6 +14,13 @@ chmod +x ./build
 sudo ./build
 ```
 
+
+## Utilisation
+```
+chmod +x ./build
+sudo ./build
+```
+
 ## Script BASH
 
 Le script BASH est utilisé pour préparer l'initramfs et la configuration du disque image. Voici un aperçu des principales étapes effectuées par le script :
